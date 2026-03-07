@@ -115,6 +115,8 @@ class Problem:
     var:       Optional[sp.Symbol]  = None   # primary variable
     free:      List[sp.Symbol]      = field(default_factory=list)
     meta:      Dict[str, Any]       = field(default_factory=dict)
+    poly:      Optional[sp.Poly]    = None
+    _cache:    Dict[str, Any]       = field(default_factory=dict, repr=False)
 
 
 def _parse(s: str) -> Optional[sp.Basic]:
@@ -154,8 +156,11 @@ def classify(raw: str) -> Problem:
         e    = _parse(body)
         free = sorted(e.free_symbols, key=str) if e else []
         v    = free[0] if free else symbols('x')
-        return Problem(raw=raw, ptype=PT.FACTORING,
-                       expr=e, var=v, free=free)
+        _poly = None
+        try:
+            _poly = Poly(e, v)
+        except: pass
+        return Problem(raw=raw, ptype=PT.FACTORING, expr=e, var=v, free=free, poly=_poly)
 
     # ── Equation: contains = ─────────────────────────────────────────────────
     if "=" in s and not any(x in s for x in ("==",">=","<=")):
@@ -170,19 +175,20 @@ def classify(raw: str) -> Problem:
 
         # Classify by degree & content
         trig_atoms = expr.atoms(sin, cos, tan)
+        _poly = None
         if trig_atoms:
             pt = PT.TRIG_EQ
         else:
             try:
-                poly = Poly(expr, v)
-                deg  = poly.degree()
+                _poly = Poly(expr, v)
+                deg  = _poly.degree()
                 pt   = {1: PT.LINEAR, 2: PT.QUADRATIC,
                         3: PT.CUBIC}.get(deg, PT.POLY)
             except Exception:
                 pt = PT.UNKNOWN
 
         return Problem(raw=raw, ptype=pt,
-                       expr=expr, lhs=lhs, rhs=rhs, var=v, free=free)
+                       expr=expr, lhs=lhs, rhs=rhs, var=v, free=free, poly=_poly)
 
     # ── Expression (simplification / identity) ───────────────────────────────
     e = _parse(s)
@@ -220,7 +226,7 @@ def phase_01(p: Problem) -> dict:
            f"Find all v s.t. {p.lhs} = {p.rhs}; verify by substitution")
         # Degree
         try:
-            poly = Poly(p.expr, p.var)
+            poly = p.poly if p.poly else Poly(p.expr, p.var)
             r["degree"] = poly.degree()
             r["coeffs"] = [str(c) for c in poly.all_coeffs()]
             kv("Degree",   r["degree"])
@@ -271,8 +277,14 @@ def phase_02(p: Problem, g: dict) -> dict:
     r = {"successes": [], "failures": []}
 
     def attempt(name, fn):
+        if name in p._cache:
+            res = p._cache[name]
+            r["successes"].append({"method": name, "result": res})
+            ok(f"{name} (cached) → {str(res)[:80]}")
+            return res
         try:
             result = fn()
+            p._cache[name] = result
             r["successes"].append({"method": name, "result": result})
             ok(f"{name}  →  {str(result)[:80]}")
             return result
@@ -298,11 +310,11 @@ def phase_02(p: Problem, g: dict) -> dict:
         # 3. roots() for polynomials
         if p.ptype != PT.TRIG_EQ:
             attempt("roots(Poly(expr, var))",
-                    lambda: str(roots(Poly(p.expr, v))))
+                    lambda: str(roots(p.poly if p.poly else Poly(p.expr, v))))
 
         # 4. Numerical roots
         attempt("nroots(Poly, n=6 digits)",
-                lambda: [str(N(r_,6)) for r_ in sp.nroots(Poly(p.expr, v))])
+                lambda: [str(N(r_,6)) for r_ in sp.nroots(p.poly if p.poly else Poly(p.expr, v))])
 
         # 5. Verify solutions found
         if sols:
@@ -345,9 +357,9 @@ def phase_02(p: Problem, g: dict) -> dict:
         attempt("factor_list",  lambda: factor_list(e))
         attempt("sqf_list",     lambda: sqf_list(e))
         if p.var:
-            attempt("roots",    lambda: str(roots(Poly(e, p.var))))
+            attempt("roots",    lambda: str(roots(p.poly if p.poly else Poly(e, p.var))))
             attempt("nroots",   lambda: [str(N(r_,6))
-                                         for r_ in sp.nroots(Poly(e, p.var))])
+                                         for r_ in sp.nroots(p.poly if p.poly else Poly(e, p.var))])
         # Verify factoring
         if fac is not None and fac != e:
             check = simplify(expand(fac) - expand(e))
@@ -414,8 +426,15 @@ def phase_03(p: Problem, prev: dict) -> dict:
     # ── Symmetry ─────────────────────────────────────────────────────────────
     if p.expr is not None and v and v in p.expr.free_symbols:
         try:
-            even = simplify(p.expr.subs(v, -v) - p.expr) == 0
-            odd  = simplify(p.expr.subs(v, -v) + p.expr) == 0
+            if "symmetry" in p._cache:
+                even, odd = p._cache["symmetry"]
+            elif p.poly:
+                even, odd = p.poly.is_even, p.poly.is_odd
+                p._cache["symmetry"] = (even, odd)
+            else:
+                even = simplify(p.expr.subs(v, -v) - p.expr) == 0
+                odd  = simplify(p.expr.subs(v, -v) + p.expr) == 0
+                p._cache["symmetry"] = (even, odd)
             r["symmetry"] = {"even": even, "odd": odd}
             if even:  finding("Function is EVEN: f(-x) = f(x)")
             elif odd: finding("Function is ODD:  f(-x) = -f(x)")
@@ -427,7 +446,7 @@ def phase_03(p: Problem, prev: dict) -> dict:
     if p.ptype in (PT.LINEAR, PT.QUADRATIC, PT.CUBIC, PT.POLY, PT.FACTORING):
         e = p.expr
         try:
-            poly  = Poly(e, v)
+            poly  = p.poly if p.poly else Poly(e, v)
             deg   = poly.degree()
             coeffs= poly.all_coeffs()
             r["degree"]  = deg
@@ -460,14 +479,12 @@ def phase_03(p: Problem, prev: dict) -> dict:
                 c0    = int(coeffs[-1])  # constant term
                 lead  = int(coeffs[0])   # leading coeff
                 if c0 != 0:
-                    cands = sorted({Rational(a_, b_)
+                    cands = sorted({sgn * Rational(a_, b_)
                                     for a_ in divisors(abs(c0))
                                     for b_ in divisors(abs(lead))
-                                    for sgn in (1, -1)
-                                    for a_ in [a_]
-                                    for b_ in [b_]}, key=abs)
+                                    for sgn in (1, -1)}, key=abs)
                     hit = [str(c_) for c_ in cands[:20]
-                           if Poly(e, v).eval(c_) == 0]
+                           if poly.eval(c_) == 0]
                     r["rational_roots"] = hit
                     kv("Rational roots (RRT)", hit if hit else "none")
                     if hit:
@@ -493,7 +510,7 @@ def phase_03(p: Problem, prev: dict) -> dict:
     if p.ptype in (PT.TRIG_ID, PT.TRIG_EQ):
         e = p.expr if p.ptype == PT.TRIG_ID else (p.lhs - p.rhs if p.lhs and p.rhs else p.expr)
         try:
-            simp = trigsimp(e)
+            simp = p._cache.get('trigsimp', trigsimp(e))
             r["trigsimp"] = str(simp)
             kv("trigsimp", r["trigsimp"])
             if simp == 0:
@@ -559,7 +576,7 @@ def phase_04(p: Problem, prev: dict) -> dict:
     # ── EQUATION: get solutions, then analyse each ────────────────────────────
     if p.ptype in (PT.LINEAR, PT.QUADRATIC, PT.CUBIC, PT.POLY):
         try:
-            sols = solve(p.expr, v)
+            sols = p._cache.get("solve(expr, var)", solve(p.expr, v))
             r["solutions"] = [str(s) for s in sols]
             kv("Solutions",     r["solutions"])
 
@@ -607,7 +624,7 @@ def phase_04(p: Problem, prev: dict) -> dict:
 
     # ── TRIG IDENTITY ─────────────────────────────────────────────────────────
     elif p.ptype in (PT.TRIG_ID, PT.SIMPLIFY):
-        simp = trigsimp(p.expr)
+        simp = p._cache.get('trigsimp', trigsimp(p.expr))
         r["simplified"] = str(simp)
         kv("Simplified",   simp)
         kv("Is zero",      simp == 0)
@@ -720,7 +737,7 @@ def phase_05(p: Problem, prev: dict) -> dict:
     if p.ptype == PT.LINEAR:
         a_, b_ = symbols('a b', nonzero=True)
         gen    = a_*v + b_
-        sol    = solve(gen, v)[0]
+        sol    = p._cache.get('solve(gen, v)', solve(gen, v))[0]
         r["general_form"]      = "a·x + b = 0"
         r["general_solution"]  = str(sol)
         r["governing"]         = "a ≠ 0 (if a=0: either 0=b contradiction, or 0=0 trivial)"
@@ -741,7 +758,7 @@ def phase_05(p: Problem, prev: dict) -> dict:
     elif p.ptype == PT.QUADRATIC:
         a_, b_, c_ = symbols('a b c')
         gen        = a_*v**2 + b_*v + c_
-        gen_sols   = solve(gen, v)
+        gen_sols   = p._cache.get('solve(gen, v)', solve(gen, v))
         disc_sym   = b_**2 - 4*a_*c_
         r["general_form"]       = "a·x² + b·x + c = 0"
         r["quadratic_formula"]  = [str(s) for s in gen_sols]
@@ -762,8 +779,8 @@ def phase_05(p: Problem, prev: dict) -> dict:
         # Our specific discriminant
         disc_val = prev.get("discriminant", "?")
         finding(f"Our Δ = {disc_val} → "
-                + ("two real roots" if isinstance(disc_val,int) and disc_val>0
-                   else "double root" if disc_val==0 else "complex roots"))
+                + ("two real roots" if (isinstance(disc_val, (int, Integer)) and disc_val > 0) or (hasattr(disc_val, "is_positive") and disc_val.is_positive)
+                   else "double root" if disc_val == 0 else "complex roots"))
 
     # ── CUBIC → Cardano context ───────────────────────────────────────────────
     elif p.ptype == PT.CUBIC:
@@ -784,7 +801,7 @@ def phase_05(p: Problem, prev: dict) -> dict:
         a_,b_,c_,d_ = symbols('a b c d')
         gen_cubic = a_*v**3 + b_*v**2 + c_*v + d_
         try:
-            gen_sols = solve(gen_cubic, v)
+            gen_sols = p._cache.get('solve(gen_cubic, v)', solve(gen_cubic, v))
             finding(f"Symbolic solutions exist ({len(gen_sols)} roots)")
         except Exception:
             pass
@@ -799,8 +816,8 @@ def phase_05(p: Problem, prev: dict) -> dict:
         # Verify the family with sympy
         theta = symbols('theta')
         checks = {
-            "sin²+cos²": trigsimp(sin(theta)**2 + cos(theta)**2 - 1),
-            "1+tan²":    trigsimp(1 + tan(theta)**2 - sec(theta)**2),
+            "sin²+cos²": p._cache.get('trigsimp_sin_cos', trigsimp(sin(theta)**2 + cos(theta)**2 - 1)),
+            "1+tan²":    p._cache.get('trigsimp_1_tan', trigsimp(1 + tan(theta)**2 - sec(theta)**2)),
         }
         for name_, val in checks.items():
             kv(f"  {name_}", f"= {val}  {'✓' if val==0 else '?'}")
@@ -893,7 +910,7 @@ def phase_06(p: Problem, prev: dict) -> dict:
 
         # Show all roots over ℂ for our problem
         try:
-            all_sols = solve(p.expr, v, domain=sp.CC)
+            all_sols = p._cache.get('solve(expr, var, CC)', solve(p.expr, v, domain=sp.CC))
             kv("All roots over ℂ", [str(s) for s in all_sols])
             r["complex_roots"] = [str(s) for s in all_sols]
         except Exception:
@@ -1023,18 +1040,18 @@ def _final_answer(p: Problem) -> str:
     v = p.var
     if p.ptype in (PT.LINEAR, PT.QUADRATIC, PT.CUBIC, PT.POLY):
         try:
-            sols = solve(p.expr, v)
+            sols = p._cache.get("solve(expr, var)", solve(p.expr, v))
             return f"Solutions to {p.raw}: {', '.join(str(s) for s in sols)}"
         except Exception:
             return "See phase computations"
     elif p.ptype == PT.FACTORING:
         try:
-            return f"Factored form: {factor(p.expr)}"
+            return f"Factored form: {p._cache.get('factor', factor(p.expr))}"
         except Exception:
             return "See phase computations"
     elif p.ptype in (PT.TRIG_ID, PT.SIMPLIFY):
         try:
-            simp = trigsimp(p.expr)
+            simp = p._cache.get('trigsimp', trigsimp(p.expr))
             return (f"Identity confirmed: simplifies to {simp}"
                     if simp == 0 else f"Simplified: {simp}")
         except Exception:
@@ -1043,7 +1060,7 @@ def _final_answer(p: Problem) -> str:
         k = symbols('k', positive=True, integer=True)
         n = symbols('n', positive=True, integer=True)
         try:
-            s = summation(k, (k, 1, n))
+            s = p._cache.get('summation(k, (k,1,n))', summation(k, (k, 1, n)))
             return f"Sum of first n integers = {factor(s)} = n(n+1)/2"
         except Exception:
             return "See phase computations"
