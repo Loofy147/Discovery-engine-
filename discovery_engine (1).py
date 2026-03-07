@@ -64,7 +64,7 @@ W  = "\033[97m"   # white bold
 DIM= "\033[2m"
 RST= "\033[0m"
 
-PHASE_CLR = {1:G, 2:R, 3:B, 4:M, 5:Y, 6:C}
+PHASE_CLR = {1:G, 2:R, 3:B, 4:M, 5:Y, 6:C, 7:W}
 
 def hr(char="─", n=72): return char * n
 
@@ -913,6 +913,31 @@ def phase_06(p: Problem, prev: dict) -> dict:
     print(hr('═'))
     return r
 
+def phase_07(p: Problem, prev: dict) -> dict:
+    section(7, "NEW EMERGENTS", "Identify non-obvious higher structures")
+    r = {}
+
+    if p.ptype == PT.DIGRAPH_CYC:
+        r["structure"] = "Cayley digraph structure Cay(Z_m³, {e₀,e₁,e₂})"
+        r["emergent"] = "Fiber parity partition (odd/even m bifurcation)"
+        kv("Emergent structure", r["structure"])
+        kv("Deep property", r["emergent"])
+        finding("New Emergent: Odd m → Hamiltonian via twisted translation; Even m → requires non-uniform 3D sigma.")
+    elif p.ptype == PT.SUM:
+        r["emergent"] = "Faulhaber's formula (sum of k^p is poly of degree p+1)"
+        kv("Deep property", r["emergent"])
+        finding("Emergent relation: The coefficients relate to Bernoulli numbers.")
+    elif p.ptype == PT.PROOF:
+        if "sqrt(2)" in p.meta.get("body", "").lower():
+            r["emergent"] = "Algebraic Number Theory (degree 2 algebraic integers)"
+            kv("Deep property", r["emergent"])
+            finding("Emergent: Irrationality as proof of field extension [Q(√2):Q] = 2")
+    else:
+        finding("No specific new emergents identified for this problem type.")
+
+    return r
+
+
 
 def _final_answer(p: Problem) -> str:
     v = p.var
@@ -983,14 +1008,15 @@ def run(raw: str):
     g4 = phase_04(prob, g3)
     g5 = phase_05(prob, g4)
     g6 = phase_06(prob, g5)
+    g7 = phase_07(prob, g6)
 
     # Summary
     print(f"\n{hr()}")
     print(f"{W}PHASE SUMMARY{RST}")
     print(hr('·'))
     titles = {1:"Ground Truth", 2:"Direct Attack", 3:"Structure Hunt",
-              4:"Pattern Lock", 5:"Generalize",    6:"Prove Limits"}
-    for i, (g, title) in enumerate(zip([g1,g2,g3,g4,g5,g6], titles.values()), 1):
+              4:"Pattern Lock", 5:"Generalize",    6:"Prove Limits", 7:"New Emergents"}
+    for i, (g, title) in enumerate(zip([g1,g2,g3,g4,g5,g6,g7], titles.values()), 1):
         fa = g.get("final_answer","")
         line = fa[:60] if fa else (
             str(g.get("solutions", g.get("factored",
