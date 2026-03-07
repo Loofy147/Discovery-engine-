@@ -118,6 +118,18 @@ class Problem:
     poly:      Optional[sp.Poly]    = None
     _cache:    Dict[str, Any]       = field(default_factory=dict, repr=False)
 
+    def memo(self, key, func):
+        if key not in self._cache:
+            self._cache[key] = func()
+        return self._cache[key]
+
+    def get_poly(self):
+        if self.poly is None and self.expr is not None:
+            try:
+                self.poly = Poly(self.expr, self.var)
+            except: pass
+        return self.poly
+
 
 def _parse(s: str) -> Optional[sp.Basic]:
     s = s.strip()
@@ -226,7 +238,7 @@ def phase_01(p: Problem) -> dict:
            f"Find all v s.t. {p.lhs} = {p.rhs}; verify by substitution")
         # Degree
         try:
-            poly = p.poly if p.poly else Poly(p.expr, p.var)
+            poly = p.get_poly()
             r["degree"] = poly.degree()
             r["coeffs"] = [str(c) for c in poly.all_coeffs()]
             kv("Degree",   r["degree"])
@@ -310,11 +322,11 @@ def phase_02(p: Problem, g: dict) -> dict:
         # 3. roots() for polynomials
         if p.ptype != PT.TRIG_EQ:
             attempt("roots(Poly(expr, var))",
-                    lambda: str(roots(p.poly if p.poly else Poly(p.expr, v))))
+                    lambda: str(roots(p.get_poly())))
 
         # 4. Numerical roots
         attempt("nroots(Poly, n=6 digits)",
-                lambda: [str(N(r_,6)) for r_ in sp.nroots(p.poly if p.poly else Poly(p.expr, v))])
+                lambda: [str(N(r_,6)) for r_ in sp.nroots(p.get_poly())])
 
         # 5. Verify solutions found
         if sols:
@@ -357,9 +369,9 @@ def phase_02(p: Problem, g: dict) -> dict:
         attempt("factor_list",  lambda: factor_list(e))
         attempt("sqf_list",     lambda: sqf_list(e))
         if p.var:
-            attempt("roots",    lambda: str(roots(p.poly if p.poly else Poly(e, p.var))))
+            attempt("roots",    lambda: str(roots(p.get_poly())))
             attempt("nroots",   lambda: [str(N(r_,6))
-                                         for r_ in sp.nroots(p.poly if p.poly else Poly(e, p.var))])
+                                         for r_ in sp.nroots(p.get_poly())])
         # Verify factoring
         if fac is not None and fac != e:
             check = simplify(expand(fac) - expand(e))
@@ -446,7 +458,7 @@ def phase_03(p: Problem, prev: dict) -> dict:
     if p.ptype in (PT.LINEAR, PT.QUADRATIC, PT.CUBIC, PT.POLY, PT.FACTORING):
         e = p.expr
         try:
-            poly  = p.poly if p.poly else Poly(e, v)
+            poly  = p.get_poly()
             deg   = poly.degree()
             coeffs= poly.all_coeffs()
             r["degree"]  = deg
@@ -510,7 +522,7 @@ def phase_03(p: Problem, prev: dict) -> dict:
     if p.ptype in (PT.TRIG_ID, PT.TRIG_EQ):
         e = p.expr if p.ptype == PT.TRIG_ID else (p.lhs - p.rhs if p.lhs and p.rhs else p.expr)
         try:
-            simp = p._cache.get('trigsimp', trigsimp(e))
+            simp = p.memo('trigsimp', lambda: trigsimp(e))
             r["trigsimp"] = str(simp)
             kv("trigsimp", r["trigsimp"])
             if simp == 0:
@@ -576,7 +588,7 @@ def phase_04(p: Problem, prev: dict) -> dict:
     # ── EQUATION: get solutions, then analyse each ────────────────────────────
     if p.ptype in (PT.LINEAR, PT.QUADRATIC, PT.CUBIC, PT.POLY):
         try:
-            sols = p._cache.get("solve(expr, var)", solve(p.expr, v))
+            sols = p.memo('solve(expr, var)', lambda: solve(p.expr, v))
             r["solutions"] = [str(s) for s in sols]
             kv("Solutions",     r["solutions"])
 
@@ -624,7 +636,7 @@ def phase_04(p: Problem, prev: dict) -> dict:
 
     # ── TRIG IDENTITY ─────────────────────────────────────────────────────────
     elif p.ptype in (PT.TRIG_ID, PT.SIMPLIFY):
-        simp = p._cache.get('trigsimp', trigsimp(p.expr))
+        simp = p.memo('trigsimp', lambda: trigsimp(p.expr))
         r["simplified"] = str(simp)
         kv("Simplified",   simp)
         kv("Is zero",      simp == 0)
@@ -737,7 +749,7 @@ def phase_05(p: Problem, prev: dict) -> dict:
     if p.ptype == PT.LINEAR:
         a_, b_ = symbols('a b', nonzero=True)
         gen    = a_*v + b_
-        sol    = p._cache.get('solve(gen, v)', solve(gen, v))[0]
+        sol    = p.memo('solve(gen, v)', lambda: solve(gen, v))[0]
         r["general_form"]      = "a·x + b = 0"
         r["general_solution"]  = str(sol)
         r["governing"]         = "a ≠ 0 (if a=0: either 0=b contradiction, or 0=0 trivial)"
@@ -758,7 +770,7 @@ def phase_05(p: Problem, prev: dict) -> dict:
     elif p.ptype == PT.QUADRATIC:
         a_, b_, c_ = symbols('a b c')
         gen        = a_*v**2 + b_*v + c_
-        gen_sols   = p._cache.get('solve(gen, v)', solve(gen, v))
+        gen_sols   = p.memo('solve(gen, v)', lambda: solve(gen, v))
         disc_sym   = b_**2 - 4*a_*c_
         r["general_form"]       = "a·x² + b·x + c = 0"
         r["quadratic_formula"]  = [str(s) for s in gen_sols]
@@ -801,7 +813,7 @@ def phase_05(p: Problem, prev: dict) -> dict:
         a_,b_,c_,d_ = symbols('a b c d')
         gen_cubic = a_*v**3 + b_*v**2 + c_*v + d_
         try:
-            gen_sols = p._cache.get('solve(gen_cubic, v)', solve(gen_cubic, v))
+            gen_sols = p.memo('solve(gen_cubic, v)', lambda: solve(gen_cubic, v))
             finding(f"Symbolic solutions exist ({len(gen_sols)} roots)")
         except Exception:
             pass
@@ -816,8 +828,8 @@ def phase_05(p: Problem, prev: dict) -> dict:
         # Verify the family with sympy
         theta = symbols('theta')
         checks = {
-            "sin²+cos²": p._cache.get('trigsimp_sin_cos', trigsimp(sin(theta)**2 + cos(theta)**2 - 1)),
-            "1+tan²":    p._cache.get('trigsimp_1_tan', trigsimp(1 + tan(theta)**2 - sec(theta)**2)),
+            "sin²+cos²": p.memo('trigsimp_sin_cos', lambda: trigsimp(sin(theta)**2 + cos(theta)**2 - 1)),
+            "1+tan²":    p.memo('trigsimp_1_tan', lambda: trigsimp(1 + tan(theta)**2 - sec(theta)**2)),
         }
         for name_, val in checks.items():
             kv(f"  {name_}", f"= {val}  {'✓' if val==0 else '?'}")
@@ -910,7 +922,7 @@ def phase_06(p: Problem, prev: dict) -> dict:
 
         # Show all roots over ℂ for our problem
         try:
-            all_sols = p._cache.get('solve(expr, var, CC)', solve(p.expr, v, domain=sp.CC))
+            all_sols = p.memo('solve(expr, var, CC)', lambda: solve(p.expr, v, domain=sp.CC))
             kv("All roots over ℂ", [str(s) for s in all_sols])
             r["complex_roots"] = [str(s) for s in all_sols]
         except Exception:
@@ -1040,18 +1052,18 @@ def _final_answer(p: Problem) -> str:
     v = p.var
     if p.ptype in (PT.LINEAR, PT.QUADRATIC, PT.CUBIC, PT.POLY):
         try:
-            sols = p._cache.get("solve(expr, var)", solve(p.expr, v))
+            sols = p.memo('solve(expr, var)', lambda: solve(p.expr, v))
             return f"Solutions to {p.raw}: {', '.join(str(s) for s in sols)}"
         except Exception:
             return "See phase computations"
     elif p.ptype == PT.FACTORING:
         try:
-            return f"Factored form: {p._cache.get('factor', factor(p.expr))}"
+            return f"Factored form: {p.memo('factor', lambda: factor(p.expr))}"
         except Exception:
             return "See phase computations"
     elif p.ptype in (PT.TRIG_ID, PT.SIMPLIFY):
         try:
-            simp = p._cache.get('trigsimp', trigsimp(p.expr))
+            simp = p.memo('trigsimp', lambda: trigsimp(p.expr))
             return (f"Identity confirmed: simplifies to {simp}"
                     if simp == 0 else f"Simplified: {simp}")
         except Exception:
@@ -1060,7 +1072,7 @@ def _final_answer(p: Problem) -> str:
         k = symbols('k', positive=True, integer=True)
         n = symbols('n', positive=True, integer=True)
         try:
-            s = p._cache.get('summation(k, (k,1,n))', summation(k, (k, 1, n)))
+            s = p.memo('summation(k, (k,1,n))', lambda: summation(k, (k, 1, n)))
             return f"Sum of first n integers = {factor(s)} = n(n+1)/2"
         except Exception:
             return "See phase computations"
