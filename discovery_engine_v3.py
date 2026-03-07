@@ -1442,13 +1442,13 @@ def phase_04(p: Problem, g3: dict) -> dict:
                 (ok if vieta else warn)(f"Vieta's formulas verified: {vieta}")
 
     elif p.ptype in (PT.TRIG_ID, PT.SIMPLIFY):
-        simp = p._cache.get("trigsimp") or simplify(p.expr)
+        simp = p.memo("trigsimp", lambda: simplify(p.expr))
         r["simplified"] = str(simp)
         kv("Simplified", simp); kv("Is identity (=0)", simp==0)
         if simp == 0: insight("Backwards: identity holds ∀x → it's an algebraic consequence of unit circle sin²+cos²=1")
 
     elif p.ptype == PT.FACTORING:
-        fac = p._cache.get("factor(expr)", factor(p.expr))
+        fac = p.memo("factor(expr)", lambda: factor(p.expr))
         r["factored"] = str(fac); kv("Factored", fac)
         flist = factor_list(p.expr)
         for i,(fi,mult) in enumerate(flist[1]):
