@@ -343,6 +343,18 @@ class Problem:
             except: pass
         return self.poly
 
+    def is_even(self):
+        if self.expr is None or self.var is None: return False
+        return self.memo("is_even", lambda: simplify(self.expr.subs(self.var, -self.var) - self.expr) == 0)
+
+    def is_odd(self):
+        if self.expr is None or self.var is None: return False
+        return self.memo("is_odd", lambda: simplify(self.expr.subs(self.var, -self.var) + self.expr) == 0)
+
+    def get_expanded_expr(self):
+        if self.expr is None: return None
+        return self.memo("expanded_expr", lambda: expand(self.expr))
+
     def ptype_str(self): return self.ptype.name
 
     def add_fingerprint(self, domain: str, values: List[float],
@@ -746,8 +758,8 @@ def phase_01(p: Problem) -> dict:
             v=p.var
             if v:
                 try:
-                    even=simplify(p.expr.subs(v,-v)-p.expr)==0
-                    odd =simplify(p.expr.subs(v,-v)+p.expr)==0
+                    even=p.is_even()
+                    odd =p.is_odd()
                     r["even"]=even; r["odd"]=odd
                     if even:  finding("EVEN → substitute u=x² to halve degree")
                     elif odd: finding("ODD → x=0 always a root → factor out x")
@@ -882,7 +894,7 @@ def phase_02(p: Problem, g1: dict) -> dict:
     # ── FACTORING ─────────────────────────────────────────────────────────
     elif p.ptype==PT.FACTORING:
         attempt("factor(expr)",lambda:factor(p.expr),0.90,
-                verify_fn=lambda f:(simplify(expand(f)-expand(p.expr))==0,"expand verify"))
+                verify_fn=lambda f:(simplify(expand(f)-p.get_expanded_expr())==0,"expand verify"))
         attempt("sqf_list",lambda:str(sqf_list(p.expr,v)),0.80)
         attempt("factor_list",lambda:str(factor_list(p.expr)),0.80)
 
@@ -1277,7 +1289,7 @@ def phase_03(p: Problem, g2: dict) -> dict:
         f=p.expr
         if f is None: return r
         try:
-            even=simplify(f.subs(v,-v)-f)==0; odd=simplify(f.subs(v,-v)+f)==0
+            even=p.is_even(); odd=p.is_odd()
             r["symmetry"]="even" if even else ("odd" if odd else "none")
             kv("Symmetry",r["symmetry"])
             if even: finding("EVEN → equilibria ±symmetric")
@@ -1321,8 +1333,8 @@ def phase_03(p: Problem, g2: dict) -> dict:
         except: pass
         if v:
             try:
-                even=simplify(p.expr.subs(v,-v)-p.expr)==0
-                odd =simplify(p.expr.subs(v,-v)+p.expr)==0
+                even=p.is_even()
+                odd =p.is_odd()
                 if even: finding("EVEN: use u=x² substitution")
                 elif odd: finding("ODD: factor out x")
             except: pass
