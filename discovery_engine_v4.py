@@ -1304,7 +1304,7 @@ def phase_03(p: Problem, g2: dict) -> dict:
     elif p.ptype==PT.OPTIMIZATION:
         f=p.expr; fpp=diff(f,v,2)
         try:
-            fpp_s=simplify(fpp); kv("f''(x)",str(fpp_s))
+            fpp_s=p.memo("simplify(f'')",lambda:simplify(fpp)); kv("f''(x)",str(fpp_s))
             if fpp_s.is_polynomial(v):
                 fp_poly=Poly(fpp_s,v)
                 if fp_poly.degree()==0:
@@ -1317,7 +1317,7 @@ def phase_03(p: Problem, g2: dict) -> dict:
 
     # Algebraic types
     if p.ptype in(PT.LINEAR,PT.QUADRATIC,PT.CUBIC,PT.POLY,PT.FACTORING):
-        try: fac=factor(p.expr); r["factored"]=str(fac); kv("Factored",fac)
+        try: fac=p.memo("factor(expr)", lambda: factor(p.expr)); r["factored"]=str(fac); kv("Factored",fac)
         except: pass
         if v:
             try:
@@ -1350,7 +1350,6 @@ def phase_03(p: Problem, g2: dict) -> dict:
             mx=max(residuals)
             (ok if mx<1e-8 else warn)(f"Numerical max residual: {mx:.2e}")
             r["numerical_id"]=mx<1e-8
-
     return r
 
 
@@ -1472,7 +1471,7 @@ def phase_04(p: Problem, g3: dict) -> dict:
     elif p.ptype==PT.DYNAMICAL:
         f=p.expr
         try:
-            equil=solve(f,v); fp=diff(f,v)
+            equil=p.memo("solve(f=0)",lambda:solve(p.expr,v)); fp=diff(f,v)
             for eq in equil:
                 fp_v=float(N(fp.subs(v,eq)))
                 stab="stable" if fp_v<0 else "unstable" if fp_v>0 else "non-hyperbolic"
@@ -1526,12 +1525,12 @@ def phase_04(p: Problem, g3: dict) -> dict:
             if p.get_poly(): (ok if _vieta_check(p.get_poly(),sols) else warn)("Vieta verified")
 
     elif p.ptype in(PT.TRIG_ID,PT.SIMPLIFY):
-        simp=p._cache.get("trigsimp") or simplify(p.expr)
+        simp=p.memo("trigsimp", lambda: trigsimp(p.expr))
         r["simplified"]=str(simp); kv("Simplified",simp)
         if simp==0: insight("Backwards: identity ∀x → consequence of sin²+cos²=1 + Euler")
 
     elif p.ptype==PT.FACTORING:
-        fac=p._cache.get("factor(expr)",factor(p.expr))
+        fac=p.memo("factor(expr)", lambda: factor(p.expr))
         r["factored"]=str(fac); kv("Factored",fac)
         try:
             flist=factor_list(p.expr)
