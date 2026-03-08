@@ -13,3 +13,7 @@
 ## 2026-03-08 - [Eager Evaluation in dict.get() and Redundant SymPy Calls]
 **Learning:** Python's `dict.get(key, default)` evaluates the `default` argument eagerly. When the default is an expensive SymPy function like `factor()` or `simplify()`, it causes significant performance overhead even if the value is already cached.
 **Action:** Use `Problem.memo(key, lambda: expensive_call())` or explicit membership checks (`if key not in cache: cache[key] = ...`) to ensure lazy evaluation. Consolidate repetitive symbolic operations across phases into the central cache.
+
+## 2026-03-08 - [Centralized Parity and Expansion Caching]
+**Learning:** Repetitive symbolic properties like parity (even/odd) and expanded forms were being recomputed multiple times across different phases. Even with a per-problem cache, the overhead of re-invoking the logic and the `_timed` wrapper adds up.
+**Action:** Centralize these common properties into methods on the `Problem` class that leverage the `memo` method. This ensures they are computed at most once per problem and provides a clean API for all phases to consume.
