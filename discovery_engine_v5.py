@@ -389,7 +389,7 @@ class PT(Enum):
     SUM=9; PROOF=10; DIGRAPH_CYC=11
     GRAPH=12; MATRIX=13; MARKOV=14; ENTROPY=15
     DYNAMICAL=16; CONTROL=17; OPTIMIZATION=18
-    MELNIKOV=19; PLANAR2D=20; SLOWFAST=21; DDE=22; PDE_RD=23; AIMO=24
+    MELNIKOV=19; PLANAR2D=20; SLOWFAST=21; DDE=22; PDE_RD=23
     UNKNOWN=99
 
     def label(self):
@@ -402,7 +402,6 @@ class PT(Enum):
             17:"control theory", 18:"optimization",
             19:"Melnikov/chaos", 20:"2D planar system", 21:"slow-fast/canards",
             22:"delay DDE", 23:"reaction-diffusion PDE",
-            24:"AIMO problem",
             99:"unknown"
         }.get(self.value, "unknown")
 
@@ -757,10 +756,11 @@ class AttemptPlan:
 
 def classify(raw: str) -> Problem:
     low = raw.lower().strip()
-    if any(kw in low for kw in ("sum of", "1+2+", "series", "summation", "sigma")):
-        return Problem(raw=raw, ptype=PT.SUM, meta={"summand": _parse_summand(raw)})
 
-
+    # AIMO specific patterns (Olympiad level)
+    aimo_kws = ('triangle', 'perimeter', 'remainder', 'function f', 'tournament', 'runners', 'blackboard', 'n-tastic', 'sweets', 'norwegian', 'rectangles', 'shifty')
+    if any(kw in low for kw in aimo_kws) or (('integer' in low or 'integer' in raw) and not any(skip in low for skip in ('sum', 'series', 'matrix', 'graph'))):
+        return Problem(raw=raw, ptype=PT.AIMO)
 
     if re.match(r'^entropy\b', low):
         probs, warns = _parse_probs(raw)
@@ -803,7 +803,8 @@ def classify(raw: str) -> Problem:
         v = _var_prefer(free) or symbols('x')
         return Problem(raw=raw, ptype=PT.OPTIMIZATION, expr=expr, var=v, free=free, meta={"goal": goal})
 
-
+    if any(kw in low for kw in ("sum of", "1+2+", "series", "summation", "sigma")):
+        return Problem(raw=raw, ptype=PT.SUM, meta={"summand": _parse_summand(raw)})
 
     if re.match(r'^(prove|show|demonstrate)\b', low):
         body = re.sub(r'^(prove|show\s+that|show|demonstrate)\s+', '', raw, flags=re.I).strip()
@@ -834,15 +835,6 @@ def classify(raw: str) -> Problem:
             return Problem(raw=raw, ptype=pt, expr=expr, lhs=lhs_e, rhs=rhs_e, var=v, free=free, poly=p_)
         except:
             return Problem(raw=raw, ptype=PT.UNKNOWN, expr=expr, var=v, free=free)
-
-
-
-
-
-    # AIMO specific patterns (Olympiad level)
-    aimo_kws = ('triangle', 'perimeter', 'remainder', 'function f', 'tournament', 'runners', 'blackboard', 'n-tastic', 'sweets', 'norwegian', 'rectangles', 'shifty')
-    if any(kw in low for kw in aimo_kws) or (('integer' in low or 'integer' in raw) and not any(skip in low for skip in ('sum', 'series', 'matrix', 'graph'))):
-        return Problem(raw=raw, ptype=PT.AIMO)
 
     e = _parse(raw)
     if e is not None:
@@ -2186,12 +2178,7 @@ def assert_has_spectrum():
 
 def assert_sum_at(n_val, expected_val):
     def chk(prob, tr):
-        # Improved lookup for summation results
-        res = None
-        for k_, v_ in prob._cache.items():
-            if 'summation' in str(k_) and v_ is not None:
-                res = v_
-                break
+        res = next((v_ for k_, v_ in prob._cache.items() if 'summation' in k_ and v_ is not None), None)
         _assert(tr, res is not None, "sum formula computed")
         if res:
             ns = symbols('n', positive=True, integer=True)
