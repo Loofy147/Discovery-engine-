@@ -863,7 +863,7 @@ def phase_02(p: Problem, g1: dict) -> dict:
         n = M.shape[0]
         # Characteristic polynomial
         lam = symbols('lambda')
-        cp = attempt("char_poly", lambda: sp.expand(det(M - lam*eye(n))), 0.95)
+        cp = attempt("char_poly", lambda: M.charpoly(lam).as_expr(), 0.95)
         if cp: r["char_poly"] = str(cp)
 
         spec = _spectrum(M); p.meta["spec"] = spec

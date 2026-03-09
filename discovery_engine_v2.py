@@ -678,7 +678,7 @@ def phase_02(p: Problem, g1: dict) -> dict:
         # Characteristic polynomial
         lam = symbols('lambda')
         try:
-            char_poly = det(M - lam*eye(M.shape[0]))
+            char_poly = M.charpoly(lam).as_expr()
             char_poly_expanded = sp.expand(char_poly)
             r["char_poly"] = str(char_poly_expanded)
             kv("Characteristic polynomial", str(char_poly_expanded))
