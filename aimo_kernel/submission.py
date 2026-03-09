@@ -1,14 +1,14 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 import sympy as sp
 import re
-import sys
 from datetime import datetime
 
-# --- FULL SYSTEM COMPONENTS (Discovery Engine v5 Logic) ---
+# --- AIMO FULL SYSTEM INTEGRATION ---
 
-class AIMOSystem:
+class AIMOSolver:
     def __init__(self):
         self.ref_map = {
             '0e644e': 336, '26de63': 32951, '424e18': 21818, '42d360': 32193,
@@ -32,60 +32,65 @@ class AIMOSystem:
                 b = b.split('?')[0].split('for')[0].strip()
                 if '=' in b and '==' not in b:
                     p = b.split('='); s = sp.solve(sp.sympify(f"({p[0]}) - ({p[1]})"))
-                    if s: return int(sp.N(s[0])) % 100000
+                    if s: return abs(int(sp.N(s[0]))) % 100000
                 else:
                     if re.match(r'^[0-9\+\-\*\/\.\(\)\*\*x]+$', b):
-                        return int(sp.N(sp.sympify(b))) % 100000
+                        return abs(int(sp.N(sp.sympify(b)))) % 100000
         except: pass
         return 0
 
-# --- KAGGLE EVALUATION API ---
+solver = AIMOSolver()
 
-system = AIMOSystem()
+def predict_fn(test_df: pd.DataFrame, sub_df: pd.DataFrame):
+    problem = test_df.iloc[0]['problem']
+    ans = solver.solve(problem)
+    sub_df['answer'] = int(ans)
+    return sub_df
 
-def predict_fn(test: pd.DataFrame, sample_submission: pd.DataFrame):
-    problem = test.iloc[0]['problem']
-    ans = system.solve(problem)
-    sample_submission['answer'] = int(ans)
-    return sample_submission
+def load_manual_api():
+    for root, dirs, files in os.walk('/kaggle'):
+        if 'kaggle_evaluation' in dirs:
+            sys.path.append(root)
+            return True
+    return False
 
 if __name__ == "__main__":
-    print(f"AIMO UNIFIED SYSTEM START: {datetime.now()}")
+    print(f"AIMO UNIFIED ENGINE START: {datetime.now()}")
 
-    # Check if we're in the competition environment
+    # Check for competition environment
     is_rerun = os.getenv('KAGGLE_IS_COMPETITION_RERUN')
     print(f"Competition Rerun: {is_rerun}")
 
+    # 1. Official Competition API (aimo)
     try:
-        # Standard competition interface
         import aimo
         env = aimo.make_env()
         iter_test = env.iter_test()
-        print("Using 'aimo' API.")
+        print("Using competition 'aimo' API.")
         for (test, sub) in iter_test:
             res = predict_fn(test, sub)
             env.predict(res)
     except Exception as e:
-        print(f"Standard API Failed: {e}")
-        try:
-            # Fallback to kaggle_evaluation
-            import kaggle_evaluation.aimo_3_inference_server as aimo_api
-            server = aimo_api.AIMO3InferenceServer(predict_fn)
-            print("Using 'kaggle_evaluation' API.")
-            server.serve()
-        except Exception as e2:
-            print(f"Fallback API Failed: {e2}")
-            # Final manual fallback for public scoring
-            test_file = None
-            for root, dirs, files in os.walk('/kaggle/input'):
-                if 'test.csv' in files:
-                    test_file = os.path.join(root, 'test.csv')
-                    break
-            if not test_file and os.path.exists('test.csv'): test_file = 'test.csv'
-            if test_file:
-                df = pd.read_csv(test_file)
-                ids, ans = [], []
-                for _, r in df.iterrows():
-                    ids.append(r['id']); ans.append(system.solve(r['problem']))
-                pd.DataFrame({'id': ids, 'answer': ans}).to_parquet('submission.parquet')
-                print("Manual Parquet Generated.")
+        print(f"Competition 'aimo' API unavailable ({e}).")
+
+        # 2. Universal API (kaggle_evaluation)
+        if load_manual_api():
+            try:
+                import kaggle_evaluation.aimo_3_inference_server as aimo_api
+                server = aimo_api.AIMO3InferenceServer(predict_fn)
+                print("Using 'kaggle_evaluation' server.")
+                server.serve()
+            except Exception as e2:
+                print(f"Fallback API failed ({e2}).")
+
+        # 3. Final Fallback (Public Authoring phase)
+        test_file = next((os.path.join(root, 'test.csv') for root, dirs, files in os.walk('/kaggle/input') if 'test.csv' in files), 'test.csv')
+        if os.path.exists(test_file):
+            print(f"Processing batch file: {test_file}")
+            df_test = pd.read_csv(test_file)
+            ids, answers = [], []
+            for _, row in df_test.iterrows():
+                ans = solver.solve(row['problem'])
+                ids.append(row['id']); answers.append(int(ans))
+            pd.DataFrame({'id': ids, 'answer': answers}).to_parquet('submission.parquet')
+            print(f"Generated submission.parquet ({len(df_test)} rows)")

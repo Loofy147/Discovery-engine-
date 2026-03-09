@@ -1,23 +1,26 @@
-[{"stream_name":"stderr","time":6.550907937,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
-,{"stream_name":"stderr","time":6.5509603389999995,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
-,{"stream_name":"stderr","time":6.550964303,"data":"0.00s - to python to disable frozen modules.\n"}
-,{"stream_name":"stderr","time":6.550966979,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
-,{"stream_name":"stderr","time":7.143902238,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
-,{"stream_name":"stderr","time":7.143935112,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
-,{"stream_name":"stderr","time":7.143940139,"data":"0.00s - to python to disable frozen modules.\n"}
-,{"stream_name":"stderr","time":7.143943975,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
-,{"stream_name":"stdout","time":11.465535729,"data":"AIMO FULL SYSTEM START: 2026-03-09 04:57:14.769122\n"}
-,{"stream_name":"stdout","time":11.465577111,"data":"API failed or not available: No module named 'aimo'\n"}
-,{"stream_name":"stderr","time":14.834702558,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
-,{"stream_name":"stderr","time":14.834736246,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
-,{"stream_name":"stderr","time":14.979282084,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
-,{"stream_name":"stderr","time":14.97930554,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
-,{"stream_name":"stderr","time":15.567867364,"data":"/usr/local/lib/python3.12/dist-packages/traitlets/traitlets.py:2915: FutureWarning: --Exporter.preprocessors=[\"remove_papermill_header.RemovePapermillHeader\"] for containers is deprecated in traitlets 5.0. You can pass `--Exporter.preprocessors item` ... multiple times to add items to a list.\n"}
-,{"stream_name":"stderr","time":15.567902321,"data":"  warn(\n"}
-,{"stream_name":"stderr","time":15.602783518,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
-,{"stream_name":"stderr","time":15.893537036,"data":"[NbConvertApp] Writing 4683 bytes to __notebook__.ipynb\n"}
-,{"stream_name":"stderr","time":18.28468697,"data":"/usr/local/lib/python3.12/dist-packages/traitlets/traitlets.py:2915: FutureWarning: --Exporter.preprocessors=[\"nbconvert.preprocessors.ExtractOutputPreprocessor\"] for containers is deprecated in traitlets 5.0. You can pass `--Exporter.preprocessors item` ... multiple times to add items to a list.\n"}
-,{"stream_name":"stderr","time":18.284719471,"data":"  warn(\n"}
-,{"stream_name":"stderr","time":18.306437349,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
-,{"stream_name":"stderr","time":19.102279634,"data":"[NbConvertApp] Writing 287583 bytes to __results__.html\n"}
+[{"stream_name":"stderr","time":7.946009321,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.946062566,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.946067279,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.946070085,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":8.67408816,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":8.67412841,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":8.674134022,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":8.674138445,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":13.892997567,"data":"AIMO UNIFIED ENGINE START: 2026-03-09 19:45:00.107566\n"}
+,{"stream_name":"stdout","time":13.893041781,"data":"API 'aimo' unavailable: No module named 'aimo'\n"}
+,{"stream_name":"stdout","time":14.85199277,"data":"API 'kaggle_evaluation' server serving.\n"}
+,{"stream_name":"stdout","time":14.852029991,"data":"Falling back to manual loop.\n"}
+,{"stream_name":"stdout","time":14.852036337,"data":"Generated submission.parquet (3 rows).\n"}
+,{"stream_name":"stderr","time":18.116652875,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":18.116686347,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":18.293515944,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":18.293549105,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":19.02876675,"data":"/usr/local/lib/python3.12/dist-packages/traitlets/traitlets.py:2915: FutureWarning: --Exporter.preprocessors=[\"remove_papermill_header.RemovePapermillHeader\"] for containers is deprecated in traitlets 5.0. You can pass `--Exporter.preprocessors item` ... multiple times to add items to a list.\n"}
+,{"stream_name":"stderr","time":19.028806304,"data":"  warn(\n"}
+,{"stream_name":"stderr","time":19.064745138,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":19.427321828,"data":"[NbConvertApp] Writing 6347 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":22.471013683,"data":"/usr/local/lib/python3.12/dist-packages/traitlets/traitlets.py:2915: FutureWarning: --Exporter.preprocessors=[\"nbconvert.preprocessors.ExtractOutputPreprocessor\"] for containers is deprecated in traitlets 5.0. You can pass `--Exporter.preprocessors item` ... multiple times to add items to a list.\n"}
+,{"stream_name":"stderr","time":22.471050655,"data":"  warn(\n"}
+,{"stream_name":"stderr","time":22.498562688,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":23.501628378,"data":"[NbConvertApp] Writing 293003 bytes to __results__.html\n"}
 ]
