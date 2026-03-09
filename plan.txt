@@ -1,0 +1,10 @@
+1. Complete AIMO System Analysis:
+   - discovery_engine_v5 (7).py: Symbolic discovery + 7-phase engine.
+   - advanced_modules (1).py: Multi-strategy AIMO solver.
+   - integrated_synthesis_engine (1).py: DEGF genuineness scoring & cross-logic fusion.
+   - apex_v2.py: APEX system with multi-layer synthesis (UltraV3).
+2. Robust Inference Script:
+   - Combine all components into a single standalone loop.
+   - Implement kaggle_evaluation AIMO3 API.
+   - Use actual GPU-accelerated discovery if available (though currently CPU-bound).
+3. Final Submit.
