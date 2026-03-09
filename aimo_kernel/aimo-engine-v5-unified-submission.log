@@ -1,0 +1,16 @@
+[{"stream_name":"stdout","time":4.924828881,"data":"AIMO SYSTEM DEPLOYED: 2026-03-09 03:48:04.629868\n"}
+,{"stream_name":"stdout","time":4.926130931,"data":"Loading test data from: /kaggle/input/competitions/ai-mathematical-olympiad-progress-prize-3/test.csv\n"}
+,{"stream_name":"stdout","time":5.225744921,"data":"Generated submission.parquet with 3 rows\n"}
+,{"stream_name":"stdout","time":5.235586965,"data":"       id  answer\n"}
+,{"stream_name":"stdout","time":5.235619171,"data":"0  000aaa       0\n"}
+,{"stream_name":"stdout","time":5.235624233,"data":"1  111bbb       0\n"}
+,{"stream_name":"stdout","time":5.235628088,"data":"2  222ccc       0\n"}
+,{"stream_name":"stderr","time":7.89779132,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":7.897851906,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":8.193937316,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":8.193959556,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":9.466117595,"data":"/usr/local/lib/python3.12/dist-packages/traitlets/traitlets.py:2915: FutureWarning: --Exporter.preprocessors=[\"nbconvert.preprocessors.ExtractOutputPreprocessor\"] for containers is deprecated in traitlets 5.0. You can pass `--Exporter.preprocessors item` ... multiple times to add items to a list.\n"}
+,{"stream_name":"stderr","time":9.466166704,"data":"  warn(\n"}
+,{"stream_name":"stderr","time":9.510203949,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":10.948651468,"data":"[NbConvertApp] Writing 285913 bytes to __results__.html\n"}
+]
