@@ -985,7 +985,7 @@ def phase_02(p: Problem, g1: dict) -> dict:
         M=p.meta.get("M")
         if M is None: fail("No matrix"); return r
         n=M.shape[0]; lam=symbols('lambda')
-        cp=attempt("char_poly",lambda:sp.expand(det(M-lam*eye(n))),0.95)
+        cp=attempt("char_poly",lambda:M.charpoly(lam).as_expr(),0.95)
         if cp: r["char_poly"]=str(cp)
         # Build companion FP from char poly
         if cp:
