@@ -17,3 +17,7 @@
 ## 2026-03-08 - [Centralized Parity and Expansion Caching]
 **Learning:** Repetitive symbolic properties like parity (even/odd) and expanded forms were being recomputed multiple times across different phases. Even with a per-problem cache, the overhead of re-invoking the logic and the `_timed` wrapper adds up.
 **Action:** Centralize these common properties into methods on the `Problem` class that leverage the `memo` method. This ensures they are computed at most once per problem and provides a clean API for all phases to consume.
+
+## 2026-03-09 - [Optimizing Matrix Characteristic Polynomials]
+**Learning:** SymPy's `det(M - lam*I)` is extremely slow for symbolic matrices because it uses naive determinant expansion. `M.charpoly(lam).as_expr()` uses the Berkowitz algorithm, which is O(n^4) and vastly more efficient for large or symbolic matrices.
+**Action:** Always prefer `M.charpoly(var).as_expr()` over `det(M - var*I)` when the characteristic polynomial is needed.
