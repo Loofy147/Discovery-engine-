@@ -803,7 +803,7 @@ def classify(raw: str) -> Problem:
     if any(kw in low for kw in ("sum of", "1+2+", "series", "summation", "sigma")):
         return Problem(raw=raw, ptype=PT.SUM, meta={"summand": _parse_summand(raw)})
 
-    if any(kw in low for kw in ('triangle', 'perimeter', 'remainder', 'function f', 'tournament', 'runners')) or (('integer' in low or 'integer' in raw) and 'sum' not in low):
+    if any(kw in low for kw in ('triangle', 'perimeter', 'remainder', 'function f', 'tournament', 'runners', 'what is', 'solve', 'calculate')) or (('integer' in low or 'integer' in raw) and 'sum' not in low):
         return Problem(raw=raw, ptype=PT.AIMO)
 
     if re.match(r'^(prove|show|demonstrate)\b', low):
