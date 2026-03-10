@@ -140,11 +140,10 @@ def robust_predict(*args, **kwargs):
     return int(get_final_ans(res_prob))
 
 def main():
-    print(f"AIMO V23 START: {datetime.now()}")
+    print(f"AIMO V24 START: {datetime.now()}")
 
-    # 1. Create initial files to guarantee outputs exist
+    # 1. Create initial parquet to guarantee output exists (REQUIRED FORMAT)
     try:
-        pd.DataFrame({'id': ['000'], 'answer': [0]}).to_csv('submission.csv', index=False)
         pd.DataFrame({'id': ['000'], 'answer': [0]}).to_parquet('submission.parquet', engine='pyarrow')
         print("Created submission.parquet (initial placeholder).")
     except Exception as e:
@@ -164,7 +163,6 @@ def main():
                 ans = robust_predict(row['problem'], id=row['id'])
                 ids.append(row['id']); answers.append(ans)
             out_df = pd.DataFrame({'id': ids, 'answer': answers})
-            out_df.to_csv('submission.csv', index=False)
             out_df.to_parquet('submission.parquet', engine='pyarrow')
             print(f"Generated submission.parquet from {len(ids)} rows.")
         except Exception as e:
